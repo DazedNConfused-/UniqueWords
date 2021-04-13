@@ -1,19 +1,20 @@
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import org.apache.lucene.analysis.PorterStemFilter;
-import org.apache.lucene.analysis.StopFilter;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.standard.StandardTokenizer;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
-import org.apache.lucene.util.Version;
-
 import java.io.IOException;
-import java.io.StringReader;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.CharArraySet;
+import org.apache.lucene.analysis.StopFilter;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.en.PorterStemFilter;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
 public class Main {
     public static void main(String[] args) throws Exception {
@@ -97,22 +98,27 @@ public class Main {
         input = input.toLowerCase();
 
         //Make all stopwords lower-case (in case this method is called and they already aren't)
-        stopWords = stopWords.stream().map(String::toLowerCase).collect(Collectors.toSet());
+        CharArraySet stopWordsSet = StopFilter.makeStopSet(stopWords.stream().map(String::toLowerCase).collect(Collectors.toList()));
 
         //Stem input
-        TokenStream tokenStream = new StandardTokenizer(
-                Version.LUCENE_30, new StringReader(input));
-        tokenStream = new StopFilter(true, tokenStream, stopWords);
-        tokenStream = new PorterStemFilter(tokenStream);
+        Analyzer analyzer = new StandardAnalyzer();
 
-        StringBuilder sb = new StringBuilder();
-        TermAttribute termAttr = tokenStream.getAttribute(TermAttribute.class);
+        TokenStream tokenStream = analyzer.tokenStream(null, input);
+        tokenStream = new PorterStemFilter(tokenStream);
+        tokenStream = new StopFilter(tokenStream, stopWordsSet);
+
+        CharTermAttribute resultAttr = tokenStream.addAttribute(CharTermAttribute.class);
+        
+        tokenStream.reset();
+
+        StringBuilder tokens = new StringBuilder();
         while (tokenStream.incrementToken()) {
-            if (sb.length() > 0) {
-                sb.append(" ");
-            }
-            sb.append(termAttr.term());
+            tokens.append(resultAttr.toString());
         }
-        return sb.toString();
+
+        analyzer.close();
+        tokenStream.close();
+        
+        return tokens.toString();
     }
 }

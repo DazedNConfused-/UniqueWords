@@ -69,7 +69,7 @@ In order to run the generated jar, use the following command:
 
 The following are potential desirable upgrades that could be done to improve the application, but were left out since they are out-of-scope.
 
-- [ ]  Upgrade the Apache Lucene library utilized.
+- [X]  Upgrade the Apache Lucene library utilized.
 - [ ]  Do not check for stop-words during stem-processing step, since they have already been removed in the cleaning stage.
 
 ## Licence
